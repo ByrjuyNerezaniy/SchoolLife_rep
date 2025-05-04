@@ -15,8 +15,9 @@ API_TOKEN = '8047014545:AAFkIIcZevGhkcTZMnzuYd8JbRmErxjNArk'
 # FSM состояния
 class Form(StatesGroup):
     gender = State()
-    name = State()
     class_num = State()
+    name = State()
+    
 
 # Клавиатура выбора пола
 gender_kb = ReplyKeyboardMarkup(
@@ -29,20 +30,28 @@ gender_kb = ReplyKeyboardMarkup(
 )
 
 # /start
-async def class_number (message: Message, state: FSMContext):
-    await state.clear()
-    await message.answer("Привет, из какого ты класса? введи ответ в формате 1А", reply_markup=gender_kb)
-    await state.set_state(Form.class_num)
+
 
 async def cmd_start(message: Message, state: FSMContext):
     await state.clear()
     await message.answer("Привет! Кто ты?", reply_markup=gender_kb)
     await state.set_state(Form.gender)
 
+
+
 # Обработка пола
 async def gender_chosen(message: Message, state: FSMContext):
     if message.text not in ["Мальчик", "Девочка"]:
         return await message.answer("Пожалуйста, выбери вариант с клавиатуры.")
+#класс
+async def class_number (message: Message, state: FSMContext):
+    await state.clear()
+    await message.answer("Из какого ты класса? введи ответ в формате 1А")
+    await state.set_state(Form.class_num)
+#обработка класса
+async def class_chosen(message: Message, state: FSMContext):
+    if len(message.text) > 3:
+        return await message.answer("такого класса не существует")
 # ввод имени
     await state.update_data(gender=message.text)
     await message.answer("Как тебя зовут?", reply_markup=ReplyKeyboardRemove())
@@ -53,7 +62,7 @@ async def name_chosen(message: Message, state: FSMContext):
     await state.update_data(name=message.text)
     data = await state.get_data()
     await message.answer(
-        f"Приятно познакомиться, <b>{data['name']}</b>!\n"
+        f"Приятно познакомиться, {data['name']}\n"
         f"Ты выбрал: {data['gender'].lower()}\n"
         f"ты выбрал: {data['class_num']}"
     )
@@ -72,6 +81,7 @@ async def main():
     dp.message.register(cmd_start, F.text == "/start")
     dp.message.register(cancel_handler, F.text == "/cancel")
     dp.message.register(gender_chosen, Form.gender)
+    dp.message.register(class_chosen, Form.class_num)
     dp.message.register(name_chosen, Form.name)
 
     await dp.start_polling(bot)
